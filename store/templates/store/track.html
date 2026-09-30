@@ -1,0 +1,74 @@
+{% extends 'store/base.html' %}
+{% load static %}
+
+{% block title %}Track Your Delivery - AutoParts Store{% endblock %}
+
+{% block content %}
+<section class="page-section">
+    <div class="page-header">
+        <h1>📦 Track Delivery Status</h1>
+        <p>Enter your unique Order ID to check live packing, dispatch, and delivery milestones</p>
+    </div>
+
+    <!-- Search Form -->
+    <div class="track-search-card">
+        <form method="GET" action="{% url 'track_order' %}" class="track-form">
+            <div class="track-input-wrap">
+                <span class="track-input-icon">🔍</span>
+                <input type="text" name="order_id" placeholder="Enter Order ID (e.g. ORD-AP-A1B2C3)" 
+                       value="{{ order_id }}" required>
+                <button type="submit" class="btn btn-primary">Track Order</button>
+            </div>
+        </form>
+
+        {% if recent_order and not order %}
+        <div class="recent-order-hint">
+            <span>Recent Order:</span>
+            <a href="{% url 'track_order' %}?order_id={{ recent_order.order_id }}">
+                {{ recent_order.order_id }} ({{ recent_order.full_name }}) ➔
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Search Results -->
+    {% if searched %}
+        {% if order %}
+        <div class="track-result-box">
+            <div class="tracking-card">
+                <div class="tracking-header">
+                    <div>
+                        <span class="badge-sku">Order ID: {{ order.order_id }}</span>
+                        <h3>{{ order.full_name }} &bull; ₹{{ order.total_price|floatformat:2 }}</h3>
+                        <p>Status: <strong class="status-highlight">{{ order.get_status_display }}</strong></p>
+                    </div>
+                    <div class="eta-box">
+                        <span class="eta-label">Estimated Delivery</span>
+                        <span class="eta-val">{{ order.estimated_delivery|default:"Within 3-5 Days" }}</span>
+                    </div>
+                </div>
+
+                <div class="order-quick-info">
+                    <div><strong>Shipping To:</strong> {{ order.address }}, {{ order.city }}, {{ order.pincode }}</div>
+                    <div><strong>Delivery Method:</strong> {{ order.delivery_method }}</div>
+                    <div><strong>Placed On:</strong> {{ order.created_at|date:"d M Y, h:i A" }}</div>
+                </div>
+
+                <div class="track-action-row">
+                    <a href="{% url 'order_confirmation' order.order_id %}" class="btn btn-secondary">
+                        View Full Invoice &amp; Details ➔
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="track-not-found">
+            <div class="empty-icon">❌</div>
+            <h3>No Order Found with ID "{{ order_id }}"</h3>
+            <p>Please double-check your Order ID from your confirmation screen or try again.</p>
+        </div>
+        {% endif %}
+    {% endif %}
+</section>
+{% endblock %}
+

@@ -1,0 +1,252 @@
+{% extends 'store/base.html' %}
+{% load static %}
+
+{% block title %}My Shopping Cart - AutoParts Store{% endblock %}
+
+{% block content %}
+<section class="page-section">
+    <!-- Breadcrumb / Stepper -->
+    <div class="checkout-stepper">
+        <div class="step-node active">
+            <div class="step-circle">1</div>
+            <span class="step-label">My Cart</span>
+        </div>
+        <div class="step-line"></div>
+        <div class="step-node">
+            <div class="step-circle">2</div>
+            <span class="step-label">Delivery Details</span>
+        </div>
+        <div class="step-line"></div>
+        <div class="step-node">
+            <div class="step-circle">3</div>
+            <span class="step-label">Order Placed</span>
+        </div>
+    </div>
+
+    <div class="page-header">
+        <h1>🛒 Shopping Cart</h1>
+        <p>Review your selected automotive components before proceeding to delivery details</p>
+    </div>
+
+    {% if cart_items %}
+    <div class="cart-layout">
+        <!-- Left: Cart Items List -->
+        <div class="cart-items-container">
+            <div class="cart-table-header">
+                <span class="col-item">Spare Part</span>
+                <span class="col-price">Unit Price</span>
+                <span class="col-qty">Quantity</span>
+                <span class="col-subtotal">Subtotal</span>
+                <span class="col-action"></span>
+            </div>
+
+            <div class="cart-items-list" id="cart-items-list">
+                {% for item in cart_items %}
+                <div class="cart-item-row" id="cart-item-{{ item.id }}">
+                    <div class="item-main col-item">
+                        <div class="item-icon">{{ item.icon }}</div>
+                        <div class="item-info">
+                            <span class="item-category">{{ item.category }}</span>
+                            <h4 class="item-title">{{ item.name }}</h4>
+                            <span class="item-sku">SKU: {{ item.part_number }}</span>
+                        </div>
+                    </div>
+
+                    <div class="item-price col-price">
+                        ₹{{ item.price|floatformat:2 }}
+                    </div>
+
+                    <div class="item-quantity col-qty">
+                        <div class="qty-control">
+                            <button type="button" class="qty-btn" 
+                                    onclick="updateQuantity({{ item.id }}, 'dec')" title="Decrease quantity">−</button>
+                            <span class="qty-val" id="qty-val-{{ item.id }}">{{ item.quantity }}</span>
+                            <button type="button" class="qty-btn" 
+                                    onclick="updateQuantity({{ item.id }}, 'inc')" title="Increase quantity">+</button>
+                        </div>
+                    </div>
+
+                    <div class="item-subtotal col-subtotal" id="item-subtotal-{{ item.id }}">
+                        ₹{{ item.item_total|floatformat:2 }}
+                    </div>
+
+                    <div class="item-remove col-action">
+                        <button type="button" class="remove-btn" 
+                                onclick="removeItem({{ item.id }})" title="Remove item">
+                            🗑️
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="cart-actions-bar">
+                <a href="{% url 'home' %}#parts" class="btn btn-secondary">
+                    ← Continue Shopping
+                </a>
+                <a href="{% url 'clear_cart' %}" class="btn btn-outline-danger" 
+                   onclick="return confirm('Are you sure you want to empty your entire cart?');">
+                    Clear Cart
+                </a>
+            </div>
+        </div>
+
+        <!-- Right: Order Summary Sidebar -->
+        <div class="cart-summary-card">
+            <h3>Order Summary</h3>
+
+            <!-- Free shipping qualification widget -->
+            <div class="shipping-threshold-box">
+                {% if free_shipping_qualify %}
+                <div class="threshold-badge success">
+                    🎉 <strong>You've unlocked FREE Standard Delivery!</strong>
+                </div>
+                {% else %}
+                <div class="threshold-badge warning">
+                    🚚 Add <strong>₹{{ free_shipping_needed }}</strong> more to unlock <strong>FREE Delivery</strong>!
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="summary-lines">
+                <div class="summary-line">
+                    <span>Parts Subtotal</span>
+                    <strong id="summary-subtotal">₹{{ subtotal|floatformat:2 }}</strong>
+                </div>
+
+                <div class="summary-line">
+                    <span>Applicable GST (18%)</span>
+                    <span id="summary-gst">₹{{ gst_tax|floatformat:2 }}</span>
+                </div>
+
+                <div class="summary-line">
+                    <span>Estimated Delivery</span>
+                    <span id="summary-shipping">
+                        {% if standard_shipping == 0 %}
+                            <span class="badge-free">FREE</span>
+                        {% else %}
+                            ₹{{ standard_shipping|floatformat:2 }}
+                        {% endif %}
+                    </span>
+                </div>
+
+                <div class="summary-divider"></div>
+
+                <div class="summary-line total-line">
+                    <span>Estimated Total</span>
+                    <strong id="summary-total">₹{{ estimated_total|floatformat:2 }}</strong>
+                </div>
+            </div>
+
+            <a href="{% url 'delivery' %}" class="btn btn-checkout">
+                <span>Proceed to Delivery</span>
+                <span class="btn-arrow">➔</span>
+            </a>
+
+            <div class="security-note">
+                <span class="sec-icon">🔒</span>
+                <span>Secure Checkout &amp; 100% Genuine Auto Parts</span>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- Empty Cart State -->
+    <div class="empty-cart-card">
+        <div class="empty-cart-icon">🛒</div>
+        <h2>Your Shopping Cart is Empty</h2>
+        <p>You haven't added any automotive spare parts to your cart yet. Explore our catalog of engine oils, ceramic brakes, batteries, headlights, and filters.</p>
+        <a href="{% url 'home' %}#parts" class="btn btn-primary btn-large">
+            Explore Spare Parts Catalog ➔
+        </a>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function updateQuantity(partId, action) {
+        fetch(`/cart/update/${partId}/${action}/`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                updateCartBadge(data.cart_count);
+                if (data.cart_empty) {
+                    window.location.reload();
+                    return;
+                }
+                
+                if (data.item_quantity === 0) {
+                    const row = document.getElementById(`cart-item-${partId}`);
+                    if (row) {
+                        row.classList.add('removing');
+                        setTimeout(() => row.remove(), 300);
+                    }
+                } else {
+                    const qtyElem = document.getElementById(`qty-val-${partId}`);
+                    const subtotalElem = document.getElementById(`item-subtotal-${partId}`);
+                    if (qtyElem) qtyElem.textContent = data.item_quantity;
+                    if (subtotalElem) subtotalElem.textContent = `₹${data.item_total.toFixed(2)}`;
+                }
+
+                // Update summary calculations
+                refreshSummary(data.subtotal);
+            }
+        })
+        .catch(err => {
+            console.error('Error updating quantity:', err);
+            window.location.href = `/cart/update/${partId}/${action}/`;
+        });
+    }
+
+    function removeItem(partId) {
+        if (!confirm('Remove this spare part from your cart?')) return;
+        fetch(`/cart/remove/${partId}/`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                updateCartBadge(data.cart_count);
+                if (data.cart_empty) {
+                    window.location.reload();
+                    return;
+                }
+                const row = document.getElementById(`cart-item-${partId}`);
+                if (row) {
+                    row.classList.add('removing');
+                    setTimeout(() => row.remove(), 300);
+                }
+                refreshSummary(data.subtotal);
+            }
+        })
+        .catch(err => {
+            window.location.href = `/cart/remove/${partId}/`;
+        });
+    }
+
+    function refreshSummary(subtotal) {
+        const gst = subtotal * 0.18;
+        const shipping = subtotal >= 1500 || subtotal === 0 ? 0 : 49;
+        const total = subtotal + shipping;
+
+        const subElem = document.getElementById('summary-subtotal');
+        const gstElem = document.getElementById('summary-gst');
+        const shipElem = document.getElementById('summary-shipping');
+        const totalElem = document.getElementById('summary-total');
+
+        if (subElem) subElem.textContent = `₹${subtotal.toFixed(2)}`;
+        if (gstElem) gstElem.textContent = `₹${gst.toFixed(2)}`;
+        if (shipElem) shipElem.innerHTML = shipping === 0 ? '<span class="badge-free">FREE</span>' : `₹${shipping.toFixed(2)}`;
+        if (totalElem) totalElem.textContent = `₹${total.toFixed(2)}`;
+    }
+</script>
+{% endblock %}

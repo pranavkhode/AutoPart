@@ -1,0 +1,218 @@
+{% extends 'store/base.html' %}
+{% load static %}
+
+{% block title %}AutoParts Store - High-Performance & OEM Spare Parts{% endblock %}
+
+{% block content %}
+<!-- ================= HERO SECTION ================= -->
+<section class="hero">
+    <!-- Moving Hero Speed Streaks & Dynamic Light Trails -->
+    <div class="hero-moving-fx" aria-hidden="true">
+        <div class="hero-mesh-wave"></div>
+        <div class="hero-speed-streaks">
+            <span class="speed-line line-1"></span>
+            <span class="speed-line line-2"></span>
+            <span class="speed-line line-3"></span>
+            <span class="speed-line line-4"></span>
+            <span class="speed-line line-5"></span>
+            <span class="speed-line line-6"></span>
+            <span class="speed-line line-7"></span>
+        </div>
+        <div class="hero-road-perspective"></div>
+        <div class="hero-floating-gear gear-1">⚙️</div>
+        <div class="hero-floating-gear gear-2">⚡</div>
+        <div class="hero-floating-gear gear-3">🔧</div>
+        <div class="hero-floating-gear gear-4">✨</div>
+        <div class="hero-floating-gear gear-5">🏎️</div>
+    </div>
+
+    <div class="hero-content">
+        <div class="hero-badge">
+            <span class="badge-dot"></span>
+            PREMIUM AUTOMOTIVE SPARE PARTS
+        </div>
+
+        <h1>
+            Quality Spare Parts.<br>
+            <span>Peak Vehicle Performance.</span>
+        </h1>
+
+        <p class="hero-desc">
+            Explore authentic OEM &amp; high-performance automotive replacement parts engineered for endurance, safety, and smooth driving.
+        </p>
+
+        <div class="hero-actions">
+            <a href="#parts" class="btn btn-primary">
+                Shop Spare Parts <span>↓</span>
+            </a>
+            <a href="{% url 'cart' %}" class="btn btn-secondary">
+                View My Cart 🛒
+            </a>
+        </div>
+
+        <div class="hero-stats">
+            <div class="stat-item">
+                <span class="stat-number">100%</span>
+                <span class="stat-label">Genuine OEM</span>
+            </div>
+            <div class="stat-separator"></div>
+            <div class="stat-item">
+                <span class="stat-number">24/48h</span>
+                <span class="stat-label">Fast Dispatch</span>
+            </div>
+            <div class="stat-separator"></div>
+            <div class="stat-item">
+                <span class="stat-number">30-Day</span>
+                <span class="stat-label">Hassle-Free Return</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ================= CATEGORIES SECTION ================= -->
+<section id="categories" class="categories-section">
+    <div class="section-header">
+        <span class="section-sub">BROWSE BY COMPONENT</span>
+        <h2>Spare Parts Categories</h2>
+        <p>Choose from our specialized automotive systems</p>
+    </div>
+
+    <div class="categories">
+        <a href="{% url 'home' %}?category=Engine#parts" class="category-card {% if active_category == 'Engine' %}active{% endif %}">
+            <div class="cat-icon-wrap">⚙️</div>
+            <h3>Engine</h3>
+            <p>Pistons, plugs, fluids &amp; blocks</p>
+            <span class="cat-arrow">Explore →</span>
+        </a>
+
+        <a href="{% url 'home' %}?category=Brakes#parts" class="category-card {% if active_category == 'Brakes' %}active{% endif %}">
+            <div class="cat-icon-wrap">🛑</div>
+            <h3>Braking System</h3>
+            <p>Ceramic pads, rotors &amp; calipers</p>
+            <span class="cat-arrow">Explore →</span>
+        </a>
+
+        <a href="{% url 'home' %}?category=Electrical#parts" class="category-card {% if active_category == 'Electrical' %}active{% endif %}">
+            <div class="cat-icon-wrap">🔋</div>
+            <h3>Electrical</h3>
+            <p>High-torque batteries &amp; horns</p>
+            <span class="cat-arrow">Explore →</span>
+        </a>
+
+        <a href="{% url 'home' %}?category=Filters#parts" class="category-card {% if active_category == 'Filters' %}active{% endif %}">
+            <div class="cat-icon-wrap">🌪️</div>
+            <h3>Filters</h3>
+            <p>Air filters, oil &amp; cabin filters</p>
+            <span class="cat-arrow">Explore →</span>
+        </a>
+
+        <a href="{% url 'home' %}?category=Lighting#parts" class="category-card {% if active_category == 'Lighting' %}active{% endif %}">
+            <div class="cat-icon-wrap">💡</div>
+            <h3>Lighting</h3>
+            <p>LED projector lamps &amp; tail lights</p>
+            <span class="cat-arrow">Explore →</span>
+        </a>
+
+        <a href="{% url 'home' %}?category=Suspension#parts" class="category-card {% if active_category == 'Suspension' %}active{% endif %}">
+            <div class="cat-icon-wrap">🔩</div>
+            <h3>Suspension</h3>
+            <p>Gas shock absorbers &amp; struts</p>
+            <span class="cat-arrow">Explore →</span>
+        </a>
+    </div>
+</section>
+
+<!-- ================= SPARE PARTS CATALOG ================= -->
+<section id="parts" class="parts-section">
+    <div class="section-header">
+        <span class="section-sub">OFFICIAL INVENTORY</span>
+        <h2>Available Spare Parts</h2>
+        <p>In-stock genuine parts with transparent pricing and doorstep delivery</p>
+    </div>
+
+    <!-- Category Filter Pills -->
+    <div class="filter-pills-wrap">
+        {% for cat in categories %}
+        <a href="{% url 'home' %}{% if cat != 'All' %}?category={{ cat }}{% endif %}#parts" 
+           class="filter-pill {% if active_category == cat or not active_category and cat == 'All' %}active{% endif %}">
+            {{ cat }}
+        </a>
+        {% endfor %}
+    </div>
+
+    <!-- Parts Grid -->
+    <div class="parts-container">
+        {% for part in parts %}
+        <div class="part-card">
+            <div class="card-top-bar">
+                <span class="category-badge">{{ part.category }}</span>
+                <span class="part-sku">{{ part.part_number }}</span>
+            </div>
+
+            <div class="part-icon-box">
+                <div class="part-icon">{{ part.icon }}</div>
+            </div>
+
+            <div class="rating-bar">
+                <span class="stars">★★★★★</span>
+                <span class="rating-val">{{ part.rating }}</span>
+                <span class="stock-status in-stock">
+                    ● In Stock ({{ part.stock }})
+                </span>
+            </div>
+
+            <h3 class="part-title">{{ part.name }}</h3>
+
+            <p class="description">
+                {{ part.description }}
+            </p>
+
+            <div class="card-footer-action">
+                <div class="price-box">
+                    <span class="price-label">Price</span>
+                    <span class="price">₹{{ part.price|floatformat:2 }}</span>
+                </div>
+
+                <button
+                    type="button"
+                    class="cart-button"
+                    onclick="quickAddToCart(event, {{ part.id }}, '{{ part.name|escapejs }}')">
+                    <span class="btn-icon">🛒</span>
+                    <span>Add to Cart</span>
+                </button>
+            </div>
+        </div>
+        {% empty %}
+        <div class="no-parts-box">
+            <div class="empty-icon">🔍</div>
+            <h3>No Spare Parts Found</h3>
+            <p>No parts match the selected category. Try selecting "All" categories.</p>
+            <a href="{% url 'home' %}#parts" class="btn btn-primary">View All Spare Parts</a>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- ================= DELIVERY BANNER ================= -->
+<section class="delivery-banner">
+    <div class="banner-content">
+        <span class="banner-tag">SEAMLESS LOGISTICS</span>
+        <h2>Fast &amp; Trackable Doorstep Delivery</h2>
+        <p>
+            Order your spare parts today and enjoy express dispatch within 24 hours, real-time live milestone tracking, and free shipping on orders above ₹1,500.
+        </p>
+        <div class="delivery-highlights">
+            <span>✓ Safe Courier Handling</span>
+            <span>✓ Live Order Tracking</span>
+            <span>✓ Genuine Parts Guarantee</span>
+        </div>
+    </div>
+
+    <div class="banner-actions">
+        <a href="{% url 'delivery' %}" class="delivery-button">
+            <span>Explore Delivery Details</span>
+            <span>➔</span>
+        </a>
+    </div>
+</section>
+{% endblock %}

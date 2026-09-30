@@ -1,0 +1,286 @@
+{% extends 'store/base.html' %}
+{% load static %}
+
+{% block title %}Delivery Details &amp; Checkout - AutoParts Store{% endblock %}
+
+{% block content %}
+<section class="page-section">
+    <!-- Stepper -->
+    <div class="checkout-stepper">
+        <div class="step-node completed">
+            <div class="step-circle">✓</div>
+            <span class="step-label">My Cart</span>
+        </div>
+        <div class="step-line completed"></div>
+        <div class="step-node active">
+            <div class="step-circle">2</div>
+            <span class="step-label">Delivery Details</span>
+        </div>
+        <div class="step-line"></div>
+        <div class="step-node">
+            <div class="step-circle">3</div>
+            <span class="step-label">Order Placed</span>
+        </div>
+    </div>
+
+    <div class="page-header">
+        <h1>📦 Delivery &amp; Shipping Details</h1>
+        <p>Choose your delivery preference and enter your shipping address to complete your order</p>
+    </div>
+
+    <form method="POST" action="{% url 'delivery' %}" id="delivery-form" class="delivery-layout">
+        {% csrf_token %}
+
+        <!-- Left column: Options & Address Form -->
+        <div class="delivery-main-column">
+
+            <!-- Delivery Speed Methods -->
+            <div class="form-card">
+                <div class="card-title-bar">
+                    <span class="card-step-num">A</span>
+                    <h3>Select Delivery Speed</h3>
+                </div>
+
+                <div class="shipping-methods-grid">
+                    <!-- Standard Delivery -->
+                    <label class="method-card active" id="method-card-Standard">
+                        <input type="radio" name="delivery_method" value="Standard" checked 
+                               data-cost="{{ shipping_rates.Standard }}" 
+                               data-eta="{{ eta_info.Standard }}"
+                               onchange="onMethodChange(this)">
+                        <div class="method-indicator"></div>
+                        <div class="method-body">
+                            <div class="method-top">
+                                <span class="method-icon">🚚</span>
+                                <span class="method-name">Standard Delivery</span>
+                                <span class="method-cost">
+                                    {% if shipping_rates.Standard == 0 %}
+                                        <span class="badge-free">FREE</span>
+                                    {% else %}
+                                        ₹{{ shipping_rates.Standard|floatformat:0 }}
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <p class="method-desc">Reliable ground shipping across all major cities.</p>
+                            <span class="method-eta">Estimated: <strong>{{ eta_info.Standard }}</strong></span>
+                        </div>
+                    </label>
+
+                    <!-- Express Delivery -->
+                    <label class="method-card" id="method-card-Express">
+                        <input type="radio" name="delivery_method" value="Express" 
+                               data-cost="{{ shipping_rates.Express }}" 
+                               data-eta="{{ eta_info.Express }}"
+                               onchange="onMethodChange(this)">
+                        <div class="method-indicator"></div>
+                        <div class="method-body">
+                            <div class="method-top">
+                                <span class="method-icon">⚡</span>
+                                <span class="method-name">Express Delivery</span>
+                                <span class="method-cost">₹{{ shipping_rates.Express|floatformat:0 }}</span>
+                            </div>
+                            <p class="method-desc">Fast air transit &amp; priority courier dispatch.</p>
+                            <span class="method-eta">Estimated: <strong>{{ eta_info.Express }}</strong></span>
+                        </div>
+                    </label>
+
+                    <!-- Doorstep Priority -->
+                    <label class="method-card" id="method-card-Doorstep">
+                        <input type="radio" name="delivery_method" value="Doorstep Priority" 
+                               data-cost="{{ shipping_rates.DoorstepPriority|default:249 }}" 
+                               data-eta="{{ eta_info.DoorstepPriority|default:eta_info.Express }}"
+                               onchange="onMethodChange(this)">
+                        <div class="method-indicator"></div>
+                        <div class="method-body">
+                            <div class="method-top">
+                                <span class="method-icon">📍</span>
+                                <span class="method-name">Doorstep Priority</span>
+                                <span class="method-cost">₹249</span>
+                            </div>
+                            <p class="method-desc">Next-day dedicated vehicle delivery with parts inspection.</p>
+                            <span class="method-eta">Estimated: <strong>Tomorrow</strong></span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Shipping Address Form -->
+            <div class="form-card">
+                <div class="card-title-bar">
+                    <span class="card-step-num">B</span>
+                    <h3>Shipping Address Details</h3>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label for="full_name">Full Name <span class="req">*</span></label>
+                        <input type="text" id="full_name" name="full_name" placeholder="e.g. Pranav Khode" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="phone">Mobile Number <span class="req">*</span></label>
+                        <input type="tel" id="phone" name="phone" placeholder="10-digit mobile number" pattern="[0-9]{10}" required>
+                        <small class="form-hint">Used for live delivery SMS &amp; courier OTP</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" name="email" placeholder="name@example.com">
+                        <small class="form-hint">Order confirmation &amp; digital invoice sent here</small>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="address">Delivery Street Address <span class="req">*</span></label>
+                        <textarea id="address" name="address" rows="3" placeholder="Flat / House No., Building Name, Street / Road, Landmark" required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="city">City / Town <span class="req">*</span></label>
+                        <input type="text" id="city" name="city" placeholder="e.g. Pune" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="state">State <span class="req">*</span></label>
+                        <select id="state" name="state" required>
+                            <option value="Maharashtra" selected>Maharashtra</option>
+                            <option value="Gujarat">Gujarat</option>
+                            <option value="Karnataka">Karnataka</option>
+                            <option value="Delhi">Delhi NCR</option>
+                            <option value="Tamil Nadu">Tamil Nadu</option>
+                            <option value="Telangana">Telangana</option>
+                            <option value="Madhya Pradesh">Madhya Pradesh</option>
+                            <option value="Other">Other State</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="pincode">PIN Code <span class="req">*</span></label>
+                        <input type="text" id="pincode" name="pincode" placeholder="6-digit PIN code" pattern="[0-9]{6}" required>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Method Preview -->
+            <div class="form-card">
+                <div class="card-title-bar">
+                    <span class="card-step-num">C</span>
+                    <h3>Payment Mode</h3>
+                </div>
+                <div class="payment-selection-box">
+                    <label class="payment-option selected">
+                        <input type="radio" name="payment_mode" value="COD" checked>
+                        <div class="payment-body">
+                            <span class="pay-icon">💵</span>
+                            <div>
+                                <strong>Cash / UPI on Delivery (COD)</strong>
+                                <p>Pay securely via Cash, QR, or UPI when your spare parts reach your doorstep.</p>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right column: Live Checkout Summary -->
+        <div class="delivery-summary-column">
+            <div class="cart-summary-card sticky-summary">
+                <h3>Order Review</h3>
+
+                <!-- Mini item preview -->
+                <div class="mini-items-preview">
+                    {% for item in cart_items %}
+                    <div class="mini-item">
+                        <span class="mini-icon">{{ item.icon }}</span>
+                        <div class="mini-details">
+                            <div class="mini-name">{{ item.name }}</div>
+                            <div class="mini-qty-price">Qty: {{ item.quantity }} &times; ₹{{ item.price|floatformat:0 }}</div>
+                        </div>
+                        <span class="mini-subtotal">₹{{ item.item_total|floatformat:0 }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="summary-divider"></div>
+
+                <div class="summary-lines">
+                    <div class="summary-line">
+                        <span>Items Subtotal</span>
+                        <strong>₹<span id="subtotal-val">{{ subtotal|floatformat:2 }}</span></strong>
+                    </div>
+
+                    <div class="summary-line">
+                        <span>Delivery Fee</span>
+                        <span id="shipping-display">
+                            {% if shipping_rates.Standard == 0 %}
+                                <span class="badge-free">FREE</span>
+                            {% else %}
+                                ₹{{ shipping_rates.Standard|floatformat:2 }}
+                            {% endif %}
+                        </span>
+                    </div>
+
+                    <div class="summary-line">
+                        <span>Delivery ETA</span>
+                        <strong id="eta-display" class="highlight-eta">{{ eta_info.Standard }}</strong>
+                    </div>
+
+                    <div class="summary-divider"></div>
+
+                    <div class="summary-line total-line">
+                        <span>Total Payable</span>
+                        <strong class="grand-total">₹<span id="grand-total-val">{% if shipping_rates.Standard == 0 %}{{ subtotal|floatformat:2 }}{% else %}{{ subtotal|add:shipping_rates.Standard|floatformat:2 }}{% endif %}</span></strong>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-place-order" id="place-order-btn">
+                    <span class="btn-text">Confirm Order &amp; Place Delivery ➔</span>
+                </button>
+
+                <div class="order-guarantees">
+                    <div class="guarantee-line">🛡️ Genuine OEM Replacement Warranty</div>
+                    <div class="guarantee-line">⚡ Real-time Order Tracking Included</div>
+                    <div class="guarantee-line">📦 Safe &amp; Shockproof Protective Packaging</div>
+                </div>
+            </div>
+        </div>
+
+    </form>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const subtotal = {{ subtotal }};
+
+    function onMethodChange(radio) {
+        // Highlight active card
+        document.querySelectorAll('.method-card').forEach(card => card.classList.remove('active'));
+        radio.closest('.method-card').classList.add('active');
+
+        const cost = parseFloat(radio.dataset.cost) || 0;
+        const eta = radio.dataset.eta || "In 3-5 days";
+
+        const shippingDisplay = document.getElementById('shipping-display');
+        const grandTotalVal = document.getElementById('grand-total-val');
+        const etaDisplay = document.getElementById('eta-display');
+
+        if (cost === 0) {
+            shippingDisplay.innerHTML = '<span class="badge-free">FREE</span>';
+        } else {
+            shippingDisplay.textContent = `₹${cost.toFixed(2)}`;
+        }
+
+        const grandTotal = subtotal + cost;
+        grandTotalVal.textContent = grandTotal.toFixed(2);
+        etaDisplay.textContent = eta;
+    }
+
+    // Smooth button submit animation
+    document.getElementById('delivery-form').addEventListener('submit', function(e) {
+        const btn = document.getElementById('place-order-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<span>Processing Order... ⏳</span>';
+    });
+</script>
+{% endblock %}

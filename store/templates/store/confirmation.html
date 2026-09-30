@@ -1,0 +1,216 @@
+{% extends 'store/base.html' %}
+{% load static %}
+
+{% block title %}Order Confirmation #{{ order.order_id }} - AutoParts Store{% endblock %}
+
+{% block content %}
+<section class="page-section">
+    <!-- Stepper -->
+    <div class="checkout-stepper">
+        <div class="step-node completed">
+            <div class="step-circle">✓</div>
+            <span class="step-label">My Cart</span>
+        </div>
+        <div class="step-line completed"></div>
+        <div class="step-node completed">
+            <div class="step-circle">✓</div>
+            <span class="step-label">Delivery Details</span>
+        </div>
+        <div class="step-line completed"></div>
+        <div class="step-node active success-node">
+            <div class="step-circle">✓</div>
+            <span class="step-label">Order Placed</span>
+        </div>
+    </div>
+
+    <!-- Celebration Banner -->
+    <div class="order-success-card">
+        <div class="success-icon-wrap">
+            <svg class="checkmark-svg" viewBox="0 0 52 52">
+                <circle class="checkmark-circle" cx="26" cy="26" r="24" fill="none"/>
+                <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+            </svg>
+        </div>
+
+        <h1>Thank You for Your Order!</h1>
+        <p class="success-subtitle">
+            Your automotive spare parts order has been placed and is now being processed for delivery.
+        </p>
+
+        <div class="order-id-badge">
+            <span>Order ID:</span>
+            <strong id="order-id-val">{{ order.order_id }}</strong>
+            <button type="button" class="copy-btn" onclick="copyOrderId()" title="Copy Order ID">📋 Copy</button>
+        </div>
+    </div>
+
+    <!-- Delivery Tracking Timeline -->
+    <div class="tracking-card">
+        <div class="tracking-header">
+            <div>
+                <h3>🚚 Live Delivery Tracking</h3>
+                <p>Status: <strong class="status-highlight">{{ order.get_status_display }}</strong></p>
+            </div>
+            <div class="eta-box">
+                <span class="eta-label">Estimated Delivery Date</span>
+                <span class="eta-val">{{ order.estimated_delivery|default:"In 3-4 Days" }}</span>
+            </div>
+        </div>
+
+        <!-- Animated Progress Tracker -->
+        <div class="timeline-container">
+            <div class="timeline-progress-bar">
+                <div class="timeline-progress-fill" style="width: {% if current_step == 1 %}15%{% elif current_step == 2 %}40%{% elif current_step == 3 %}65%{% elif current_step == 4 %}90%{% else %}100%{% endif %};"></div>
+            </div>
+
+            <div class="milestones-row">
+                {% for m in milestones %}
+                <div class="milestone-step {% if m.id < current_step %}completed{% elif m.id == current_step %}active pulsing{% else %}pending{% endif %}">
+                    <div class="milestone-marker">
+                        <span class="m-icon">{{ m.icon }}</span>
+                        {% if m.id < current_step %}
+                        <span class="m-done-badge">✓</span>
+                        {% endif %}
+                    </div>
+                    <span class="m-title">{{ m.name }}</span>
+                    <span class="m-desc">{{ m.desc }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Order & Customer Information Grid -->
+    <div class="order-details-grid">
+        <!-- Delivery Destination Card -->
+        <div class="detail-card">
+            <h4>📍 Delivery Destination</h4>
+            <div class="info-rows">
+                <div class="info-row">
+                    <span class="info-label">Customer Name:</span>
+                    <strong class="info-value">{{ order.full_name }}</strong>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Contact Phone:</span>
+                    <span class="info-value">{{ order.phone }}</span>
+                </div>
+                {% if order.email %}
+                <div class="info-row">
+                    <span class="info-label">Email:</span>
+                    <span class="info-value">{{ order.email }}</span>
+                </div>
+                {% endif %}
+                <div class="info-row">
+                    <span class="info-label">Delivery Address:</span>
+                    <span class="info-value address-text">{{ order.address }}, {{ order.city }}, {{ order.state }} - {{ order.pincode }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Delivery Mode:</span>
+                    <span class="badge-delivery-mode">{{ order.delivery_method }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment & Order Summary Card -->
+        <div class="detail-card">
+            <h4>💳 Order &amp; Billing Summary</h4>
+            <div class="info-rows">
+                <div class="info-row">
+                    <span class="info-label">Order Date:</span>
+                    <span class="info-value">{{ order.created_at|date:"d M Y, h:i A" }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Payment Mode:</span>
+                    <strong class="info-value">Cash / UPI on Delivery (COD)</strong>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Parts Subtotal:</span>
+                    <span class="info-value">₹{{ order.subtotal|floatformat:2 }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Delivery Charges:</span>
+                    <span class="info-value">
+                        {% if order.delivery_cost == 0 %}
+                            <span class="badge-free">FREE</span>
+                        {% else %}
+                            ₹{{ order.delivery_cost|floatformat:2 }}
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="summary-divider"></div>
+                <div class="info-row total-highlight-row">
+                    <span class="info-label">Total Amount:</span>
+                    <strong class="grand-total">₹{{ order.total_price|floatformat:2 }}</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Itemized Spare Parts Receipt Table -->
+    <div class="receipt-card" id="receipt-section">
+        <div class="receipt-header">
+            <h4>📋 Ordered Spare Parts</h4>
+            <button type="button" class="btn btn-outline" onclick="window.print()">
+                🖨️ Print Invoice Receipt
+            </button>
+        </div>
+
+        <div class="receipt-table-wrap">
+            <table class="receipt-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Spare Part</th>
+                        <th>Unit Price</th>
+                        <th>Quantity</th>
+                        <th>Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>
+                            <div class="receipt-item-title">
+                                <strong>{{ item.part_name }}</strong>
+                            </div>
+                        </td>
+                        <td>₹{{ item.price|floatformat:2 }}</td>
+                        <td>{{ item.quantity }}</td>
+                        <td><strong>₹{{ item.item_total|floatformat:2 }}</strong></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="4" class="text-right"><strong>Grand Total:</strong></td>
+                        <td><strong class="grand-total">₹{{ order.total_price|floatformat:2 }}</strong></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="confirmation-actions">
+        <a href="{% url 'home' %}" class="btn btn-primary">
+            ← Continue Shopping
+        </a>
+        <a href="{% url 'track_order' %}?order_id={{ order.order_id }}" class="btn btn-secondary">
+            📦 Track Order Status ➔
+        </a>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function copyOrderId() {
+        const orderId = document.getElementById('order-id-val').textContent;
+        navigator.clipboard.writeText(orderId).then(() => {
+            showToast(`Order ID ${orderId} copied to clipboard!`, "Copied!");
+        });
+    }
+</script>
+{% endblock %}
+

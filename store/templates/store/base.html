@@ -1,0 +1,368 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AutoParts Store - Quality Automotive Spare Parts{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <!-- Google Fonts for crisp modern typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+    <!-- ================= DYNAMIC MOVING BACKGROUND ================= -->
+    <div class="dynamic-moving-bg" aria-hidden="true">
+        <!-- Ambient Glowing Orbs -->
+        <div class="moving-orb orb-cyan"></div>
+        <div class="moving-orb orb-blue"></div>
+        <div class="moving-orb orb-amber"></div>
+        <div class="moving-orb orb-teal"></div>
+        <!-- Animated Cyber Grid Pattern -->
+        <div class="moving-cyber-grid"></div>
+        <!-- Interactive Particle & Constellation Canvas -->
+        <canvas id="moving-bg-canvas"></canvas>
+    </div>
+
+    <!-- ================= HEADER / NAVBAR ================= -->
+    <header>
+        <a href="{% url 'home' %}" class="logo">
+            <span class="logo-icon">🚗</span>
+            <span class="logo-text">AutoParts <span class="logo-highlight">Hub</span></span>
+        </a>
+
+        <nav>
+            <a href="{% url 'home' %}" class="nav-link">Home</a>
+            <a href="{% url 'home' %}#parts" class="nav-link">Spare Parts</a>
+            <a href="{% url 'home' %}#categories" class="nav-link">Categories</a>
+            <a href="{% url 'track_order' %}" class="nav-link">📦 Track Order</a>
+            <a href="{% url 'cart' %}" class="cart-nav-btn">
+                <span class="cart-icon">🛒</span>
+                <span>My Cart</span>
+                <span id="cart-badge" class="cart-badge {% if global_cart_count > 0 %}has-items{% endif %}">
+                    {{ global_cart_count }}
+                </span>
+            </a>
+        </nav>
+    </header>
+
+    <!-- ================= DJANGO FLASH MESSAGES ================= -->
+    {% if messages %}
+    <div class="messages-container">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+            <span class="alert-icon">
+                {% if message.tags == 'success' %}✓{% elif message.tags == 'error' %}✕{% else %}ℹ{% endif %}
+            </span>
+            <span>{{ message }}</span>
+            <button type="button" class="close-alert" onclick="this.parentElement.remove();">&times;</button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- ================= MAIN CONTENT ================= -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- ================= INTERACTIVE FLOATING TOAST ================= -->
+    <div id="toast" class="toast-notification">
+        <div class="toast-badge">✓</div>
+        <div class="toast-content">
+            <h4 id="toast-title">Added to Cart!</h4>
+            <p id="toast-msg">Item has been added to your shopping cart.</p>
+        </div>
+        <a href="{% url 'cart' %}" class="toast-btn">View Cart ➔</a>
+    </div>
+
+    <!-- ================= FOOTER ================= -->
+    <footer>
+        <div class="footer-grid">
+            <div class="footer-col">
+                <div class="footer-logo">🚗 AutoParts <span>Hub</span></div>
+                <p>Your trusted online destination for authentic OEM & performance automotive spare parts. Fast delivery, verified compatibility, and guaranteed quality.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Quick Links</h4>
+                <ul>
+                    <li><a href="{% url 'home' %}">Home</a></li>
+                    <li><a href="{% url 'home' %}#parts">All Spare Parts</a></li>
+                    <li><a href="{% url 'cart' %}">Shopping Cart</a></li>
+                    <li><a href="{% url 'track_order' %}">Track Your Delivery</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Categories</h4>
+                <ul>
+                    <li><a href="{% url 'home' %}?category=Engine#parts">Engine Parts</a></li>
+                    <li><a href="{% url 'home' %}?category=Brakes#parts">Braking System</a></li>
+                    <li><a href="{% url 'home' %}?category=Electrical#parts">Batteries & Electrical</a></li>
+                    <li><a href="{% url 'home' %}?category=Lighting#parts">Lighting & Lamps</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Academic Project</h4>
+                <div class="academic-badge">
+                    <p><strong>TAE-3: Creative Assignment</strong></p>
+                    <p>Student: <strong>Pranav Khode</strong></p>
+                    <p>USN / Roll: <strong>ET24030</strong></p>
+                    <p>Framework: <strong>Django &amp; Python</strong></p>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 AutoParts Store &bull; Developed by  Pranav Khode &bull; All Rights Reserved</p>
+        </div>
+    </footer>
+
+    <!-- Global Cart Script for AJAX additions and badge animations -->
+    <script>
+        function showToast(message, title = "Added to Cart!") {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-title').textContent = title;
+            document.getElementById('toast-msg').textContent = message;
+            toast.classList.add('show');
+            
+            // Auto hide after 3.5s
+            if (window.toastTimeout) clearTimeout(window.toastTimeout);
+            window.toastTimeout = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3500);
+        }
+
+        function updateCartBadge(count) {
+            const badge = document.getElementById('cart-badge');
+            if (badge) {
+                badge.textContent = count;
+                badge.classList.remove('bounce');
+                void badge.offsetWidth; // Trigger reflow
+                badge.classList.add('bounce');
+                if (count > 0) {
+                    badge.classList.add('has-items');
+                } else {
+                    badge.classList.remove('has-items');
+                }
+            }
+        }
+
+        function quickAddToCart(event, partId, partName) {
+            event.preventDefault();
+            const btn = event.currentTarget;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span>Adding...</span>';
+            btn.disabled = true;
+
+            fetch(`/cart/add/${partId}/`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                btn.innerHTML = '<span>✓ Added!</span>';
+                btn.classList.add('added');
+                updateCartBadge(data.cart_count);
+                showToast(`${partName} has been added to your cart!`);
+
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.classList.remove('added');
+                    btn.disabled = false;
+                }, 1200);
+            })
+            .catch(error => {
+                console.error('Error adding to cart:', error);
+                // Fallback to normal form submit or page reload
+                window.location.href = `/cart/add/${partId}/`;
+            });
+        }
+
+        // ================= DYNAMIC MOVING BACKGROUND CANVAS =================
+        (function() {
+            const canvas = document.getElementById('moving-bg-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return;
+
+            let width = 0, height = 0;
+            let particles = [];
+            let mouse = { x: null, y: null, radius: 140 };
+            let animationFrameId = null;
+            let isVisible = true;
+
+            const particleColors = [
+                'rgba(0, 180, 216, 0.45)',   // Cyan
+                'rgba(0, 119, 182, 0.40)',   // Marine Blue
+                'rgba(255, 183, 3, 0.45)',   // Amber Gold
+                'rgba(72, 202, 228, 0.35)'   // Sky Blue
+            ];
+
+            function resize() {
+                width = canvas.width = window.innerWidth;
+                height = canvas.height = window.innerHeight;
+            }
+
+            class Particle {
+                constructor() {
+                    this.init();
+                }
+                init() {
+                    this.x = Math.random() * (width || window.innerWidth);
+                    this.y = Math.random() * (height || window.innerHeight);
+                    this.radius = Math.random() * 2.2 + 1.2;
+                    this.baseRadius = this.radius;
+                    this.color = particleColors[Math.floor(Math.random() * particleColors.length)];
+                    this.vx = (Math.random() - 0.5) * 0.5;
+                    this.vy = (Math.random() - 0.5) * 0.5;
+                    this.pulse = Math.random() * Math.PI * 2;
+                    this.pulseSpeed = 0.02 + Math.random() * 0.02;
+                }
+                update() {
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    this.pulse += this.pulseSpeed;
+
+                    // Screen wrap
+                    if (this.x < -15) this.x = width + 15;
+                    else if (this.x > width + 15) this.x = -15;
+                    if (this.y < -15) this.y = height + 15;
+                    else if (this.y > height + 15) this.y = -15;
+
+                    // Gentle mouse deflection
+                    if (mouse.x !== null && mouse.y !== null) {
+                        const dx = this.x - mouse.x;
+                        const dy = this.y - mouse.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < mouse.radius && dist > 0) {
+                            const force = (1 - dist / mouse.radius) * 1.5;
+                            this.x += (dx / dist) * force;
+                            this.y += (dy / dist) * force;
+                        }
+                    }
+                }
+                draw() {
+                    ctx.save();
+                    ctx.beginPath();
+                    const currentRadius = this.radius + Math.sin(this.pulse) * 0.6;
+                    ctx.arc(this.x, this.y, Math.max(0.5, currentRadius), 0, Math.PI * 2);
+                    ctx.fillStyle = this.color;
+                    ctx.shadowColor = this.color;
+                    ctx.shadowBlur = 8;
+                    ctx.fill();
+                    ctx.restore();
+                }
+            }
+
+            function initParticles() {
+                particles = [];
+                const count = Math.min(55, Math.max(25, Math.floor(window.innerWidth / 30)));
+                for (let i = 0; i < count; i++) {
+                    particles.push(new Particle());
+                }
+            }
+
+            function drawConnections() {
+                const maxDist = 115;
+                for (let i = 0; i < particles.length; i++) {
+                    for (let j = i + 1; j < particles.length; j++) {
+                        const dx = particles[i].x - particles[j].x;
+                        const dy = particles[i].y - particles[j].y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < maxDist) {
+                            const alpha = (1 - dist / maxDist) * 0.14;
+                            ctx.beginPath();
+                            ctx.moveTo(particles[i].x, particles[i].y);
+                            ctx.lineTo(particles[j].x, particles[j].y);
+                            ctx.strokeStyle = `rgba(0, 180, 216, ${alpha})`;
+                            ctx.lineWidth = 0.8;
+                            ctx.stroke();
+                        }
+                    }
+                }
+            }
+
+            function animate() {
+                if (!isVisible) return;
+                ctx.clearRect(0, 0, width, height);
+
+                for (let i = 0; i < particles.length; i++) {
+                    particles[i].update();
+                    particles[i].draw();
+                }
+                drawConnections();
+
+                animationFrameId = requestAnimationFrame(animate);
+            }
+
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => {
+                    resize();
+                    initParticles();
+                }, 150);
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                mouse.x = e.clientX;
+                mouse.y = e.clientY;
+            });
+
+            window.addEventListener('mouseleave', () => {
+                mouse.x = null;
+                mouse.y = null;
+            });
+
+            window.addEventListener('touchmove', (e) => {
+                if (e.touches && e.touches.length > 0) {
+                    mouse.x = e.touches[0].clientX;
+                    mouse.y = e.touches[0].clientY;
+                }
+            }, { passive: true });
+
+            window.addEventListener('touchend', () => {
+                mouse.x = null;
+                mouse.y = null;
+            });
+
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) {
+                    isVisible = false;
+                    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+                } else {
+                    isVisible = true;
+                    animate();
+                }
+            });
+
+            const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+            if (!prefersReducedMotion.matches) {
+                resize();
+                initParticles();
+                animate();
+            }
+        })();
+
+        // Smooth scroll for anchor navigation links (e.g., #parts, #categories)
+        document.querySelectorAll('a[href^="#"]').forEach(link => {
+            link.addEventListener('click', function(e) {
+                const targetId = this.getAttribute('href');
+                if (targetId && targetId.length > 1) {
+                    const targetEl = document.querySelector(targetId);
+                    if (targetEl) {
+                        e.preventDefault();
+                        targetEl.scrollIntoView({ behavior: 'smooth' });
+                    }
+                }
+            });
+        });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
+
