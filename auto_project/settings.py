@@ -75,10 +75,25 @@ WSGI_APPLICATION = 'auto_project.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
 
+def get_database_name():
+    env_db_path = os.environ.get('DJANGO_DB_PATH')
+    if env_db_path:
+        db_path = Path(env_db_path)
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        return str(db_path)
+
+    if os.environ.get('VERCEL') or os.environ.get('NOW_REGION'):
+        tmp_db_path = Path('/tmp') / 'auto_part.sqlite3'
+        tmp_db_path.parent.mkdir(parents=True, exist_ok=True)
+        return str(tmp_db_path)
+
+    return str(BASE_DIR / 'db.sqlite3')
+
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': get_database_name(),
     }
 }
 
